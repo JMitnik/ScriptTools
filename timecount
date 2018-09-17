@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+import subprocess
+import re
+import datetime
+from dateutil import parser
+
+def get_clipboard():
+    """ Get clipboard items"""
+    s = subprocess.check_output(['pbpaste'])
+    return s.decode('utf-8')
+
+def calculate_times(calendar_input_list):
+    result = 0
+    starts_with_number_re = re.compile('^\d')
+
+    for i in calendar_input_list:
+        if (starts_with_number_re.match(i)):
+            result += processDateDeltas(i)
+    return result
+
+def processDateDeltas(dateString):
+    dateBefore, dateAfter = dateString.replace(' at', '').split(' - ')
+    parsedDateBefore = parser.parse(dateBefore)
+    parsedDateAfter = processDateAfter(parsedDateBefore, dateAfter)
+    return ((parsedDateAfter - parsedDateBefore).total_seconds() / 3600)
+
+def processDateAfter(parsedDateBefore, dateAfter):
+    hour_re = re.compile('^\d\d:\d\d')
+
+    # If same day
+    if hour_re.match(dateAfter):
+        date = parsedDateBefore.date()
+        return parser.parse(str(date) + " " + dateAfter)
+    
+    return parser.parse(dateAfter)
+
+def check_times():
+    clipboard = get_clipboard()
+    event_times = calculate_times(clipboard.split('\n'))
+    print(event_times)
+    
+
+check_times()
